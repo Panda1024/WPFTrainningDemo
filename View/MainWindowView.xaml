@@ -1,0 +1,91 @@
+﻿<Window x:Class="TranningDemo.View.MainWindowView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TranningDemo.View"
+        mc:Ignorable="d"
+        Title="MainWindowView" Height="450" Width="800">
+    
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="..\Theme/Style.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.DataContext>
+        <Binding Path="Main" Source="{StaticResource Locator}"></Binding>
+    </Window.DataContext>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition/>
+            <RowDefinition Height="20"/>
+        </Grid.RowDefinitions>
+
+        <!--Top Menu Area-->
+        <Menu Grid.Row="0" Width="Auto" Height="20" Background="LightGray" DockPanel.Dock="Top">
+            <!--File-->
+            <MenuItem Header="File">
+                <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
+                <MenuItem Header="Save" Command="{Binding SaveFileCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!--Search Area-->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,0">
+            <Label Content="Searcha Bar" Height="Auto" Width="Auto" Margin="10 5 5 5" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Style="{StaticResource defaultTextBoxStyle}" 
+                    Text="{Binding SearchKey}" />
+            <Button Content="Search" Style="{StaticResource defaultButtonStyle}" Margin="10"
+                    Command="{Binding SearchCommand}" />
+            <Button Content="Clear" Style="{StaticResource defaultButtonStyle}" Margin="10"
+                    Command="{Binding ClearCommand}" />
+            <Button Content="Add" Style="{StaticResource defaultButtonStyle}" Margin="10"
+                    Command="{Binding AddCommand}" />
+        </StackPanel>
+
+        <!--Data Display Area-->
+        <DataGrid Name="DataDisplay" Grid.Row="2" ColumnWidth="*" AutoGenerateColumns="False" 
+                  IsReadOnly="True" CanUserAddRows="False"
+                  ItemsSource="{Binding GridModelList}" 
+                  SelectionMode="Single" >
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Class No." 
+                                    Binding="{Binding Id}"/>
+                <DataGridTextColumn Header="Institute of Students" 
+                                    Binding="{Binding InstituteStudents}"/>
+                <DataGridTextColumn Header="Number of Students" 
+                                    Binding="{Binding NumberStudents}"/>
+                <DataGridTextColumn Header="Institute of Proctors" 
+                                    Binding="{Binding InstituteProctors}"/>
+                <DataGridTextColumn Header="Number of Proctors" 
+                                    Binding="{Binding NumberProctors}"/>
+                <DataGridTemplateColumn Header="Operate">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Edit" Style="{StaticResource defaultButtonStyle}" 
+                                        Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding ElementName=DataDisplay, Path=SelectedItem, Mode=OneWay }" />
+                                <Button Content="Delete" Style="{StaticResource defaultButtonStyle}" Foreground="Red" 
+                                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" 
+                                        CommandParameter="{Binding ElementName=DataDisplay, Path=SelectedItem, Mode=OneWay }" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!--Buttom State Bar-->
+        <StackPanel Grid.Row="3" Background="LightGray">
+            <Label Content="State Bar" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+    
+</Window>
