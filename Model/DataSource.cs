@@ -5,6 +5,9 @@ using System.Xml.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GalaSoft.MvvmLight;
+using System.Windows.Forms;
+using Ninject;
+using Ninject.Modules;
 using TranningDemo.Service;
 
 namespace TranningDemo.Model
@@ -14,52 +17,81 @@ namespace TranningDemo.Model
         public DataSource()
         {
             data = new List<ExamClass>();
-            xmlFileService = new XmlFileService();
         }
 
+        public DataSource(IFileIO fileService)
+        {
+            data = new List<ExamClass>();
+            if (fileService == null)
+                throw new ArgumentNullException("fileService");
+            this.fileService = fileService;
+        }
+
+        #region Field
         private List<ExamClass> data;
 
         public List<ExamClass> Data { get => data; }
 
-        private XmlFileService xmlFileService;
+        readonly IFileIO fileService;                     // File read and write interface
+
+        internal static uint index = 0;
+        #endregion
+
         #region Method
-        public void ImportData(string filePath)
+
+        public void ImportData(string fullFileName)
         {
-            if (filePath != string.Empty)
-                data = xmlFileService.ImportData(filePath);
-            else
-                return;
+            data = this.fileService.ImportData(fullFileName);
         }
-        public void SaveData(string saveFileName)
+
+        public void SaveData(string fullFileName)
         {
-            if (saveFileName != string.Empty)
-                xmlFileService.SaveData(saveFileName, data);
-            else
-                return;
+            this.fileService.SaveData(fullFileName, data);
         }
-        public ExamClass GetById(string id)
+
+        public ExamClass GetById(uint id)
         {
-            var model =  data.Find(t => t.Id == id);
+            var model =  data.Find(item => item.Id == id);
             if (model != null)
-                return model.Clone();
+                return model.DeepClone();
             return null;
         }
+
         public void Add(ExamClass examClass)
         {
             data.Add(examClass);
         }
 
-        public void Delete(string id)
+        public void Delete(uint id)
         {
-            var element = data.Find(s => s.Id == id);
+            var element = data.Find(item => item.Id == id);
             if (element != null)
                 data.Remove(element);
         }
 
-        public List<ExamClass> SerachById(string id)
+        public List<ExamClass> SerachByClassNo(string classNo)
         {
-            return data.Where(s => s.Id.Contains(id)).ToList();
+            if (data == null || data.Count == 0)
+                return null;
+            return data.Where(s => s.ClassNo.Contains(classNo)).ToList();
         }
         #endregion
+    }
+
+    public class DataSourceModule : NinjectModule
+    {
+        private readonly bool useXml;
+        public DataSourceModule(bool useXml)
+        {
+            this.useXml = useXml;
+        }
+
+        public override void Load()
+        {
+            if (this.useXml)
+                Bind<IFileIO>().To<XmlFileService>();
+            else
+                Bind<IFileIO>().To<JsonFileService>();
+        }
     }
 }

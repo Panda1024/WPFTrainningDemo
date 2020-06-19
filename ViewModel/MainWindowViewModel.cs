@@ -3,8 +3,12 @@ using GalaSoft.MvvmLight.CommandWpf;
 using GalaSoft.MvvmLight.Messaging;
 using System.Collections.ObjectModel;
 using System.Windows.Forms;
+using System.IO;
+using Ninject;
+using Ninject.Modules;
 using TranningDemo.Model;
 using TranningDemo.View;
+using TranningDemo.Service;
 
 namespace TranningDemo.ViewModel
 {
@@ -13,16 +17,15 @@ namespace TranningDemo.ViewModel
 
         public MainWindowViewModel()
         {
-            if(IsInDesignMode)                  // 设计模式
+            dataSource = new DataSource();
+            if (IsInDesignMode)                  // Design Pattern
             {
-                dataSource = new DataSource();
+                
                 dataSource.Add(new ExamClass("N666", "机械学院", 60, "机械学院", 2));
                 this.Query();
             }
-            else
+            else                                // Runtime Pattern
             {
-                dataSource = new DataSource();  // 运行时模式
-
                 OpenFileCommand = new RelayCommand(OpenFile);
                 SaveFileCommand = new RelayCommand(SaveFile);
                 SearchCommand = new RelayCommand(Query);
@@ -76,17 +79,37 @@ namespace TranningDemo.ViewModel
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.InitialDirectory = System.IO.Path.Combine( Application.StartupPath, @"..\..\Data" );
-                openFileDialog.Filter = "xml files (*.xml)|*.xml";
+                openFileDialog.Filter = "xml files (*.xml)|*.xml|json files (*.json)|*.json|All files (*.*)|*.*";
+                openFileDialog.FilterIndex = 3;
                 openFileDialog.RestoreDirectory = true;
-
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
+                    string fileExtension = Path.GetExtension(openFileDialog.FileName);
+                    IKernel kernel;
+                    bool useXml;
+                    switch (fileExtension)
+                    {
+                        case ".xml":
+                            useXml = true;
+                            kernel = new StandardKernel(new DataSourceModule(useXml));
+                            dataSource = kernel.Get<DataSource>();
+                            break;
+                        case ".json":
+                            useXml = false;
+                            kernel = new StandardKernel(new DataSourceModule(useXml));
+                            dataSource = kernel.Get<DataSource>();
+                            break;
+                    }
                     dataSource.ImportData(openFileDialog.FileName);
                     GridModelList = new ObservableCollection<ExamClass>();
                     foreach (ExamClass item in dataSource.Data)
                     {
                         GridModelList.Add(item);
                     }
+                }
+                else
+                {
+                    return;
                 }
             }
         }
@@ -95,17 +118,21 @@ namespace TranningDemo.ViewModel
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.InitialDirectory = Application.StartupPath;
-            saveFileDialog.Filter = "xml files (*.xml)|*.xml";
+            saveFileDialog.Filter = "xml files (*.xml)|*.xml|json files (*.json)|*.json|All files (*.*)|*.*";
             saveFileDialog.RestoreDirectory = true;
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 dataSource.SaveData(saveFileDialog.FileName);
             }
+            else
+            {
+                return;
+            }
         }
 
         private void Query()
         {
-            var models = dataSource.SerachById(SearchKey);
+            var models = dataSource.SerachByClassNo(SearchKey);
             GridModelList = new ObservableCollection<ExamClass>();
             if (models != null)
             {
@@ -130,22 +157,24 @@ namespace TranningDemo.ViewModel
             if(v.Value)
             {
                 dataSource.Add(newModel);
-                this.Query();
+                gridModelList.Insert(0, newModel);
             }
         }
         private void Edit(ExamClass selectedCell)
         {         
             if (selectedCell != null)
             {
-                var editModel = selectedCell.Clone();
+                var editModel = selectedCell.DeepClone();
                 UserEditWindowView view = new UserEditWindowView(ref editModel);
                 var v = view.ShowDialog();
                 if (v.Value)
                 {
-                    int indexData = dataSource.Data.FindIndex(item => item.Id == selectedCell.Id);
+                    int index = dataSource.Data.FindIndex(item => item.Id == selectedCell.Id);
                     dataSource.Delete(selectedCell.Id);
-                    dataSource.Data.Insert(indexData, editModel);
-                    this.Query();
+                    dataSource.Data.Insert(index, editModel);
+                    index = gridModelList.IndexOf(selectedCell);
+                    gridModelList.Remove(selectedCell);
+                    gridModelList.Insert(index, editModel);
                 }
             }
         }
@@ -164,7 +193,7 @@ namespace TranningDemo.ViewModel
                 if (v == DialogResult.Yes)
                 {
                     dataSource.Delete(model.Id);
-                    this.Query();
+                    gridModelList.Remove(selectedCell);
                 }
                     
             }
@@ -172,4 +201,5 @@ namespace TranningDemo.ViewModel
         #endregion
 
     }
+
 }

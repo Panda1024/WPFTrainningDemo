@@ -20,7 +20,11 @@ namespace TranningDemo.ViewModel
         }
 
         #region Field
-        public Window thisWindow;
+        private Window thisWindow;
+        public Window ThisWindow
+        {
+            set { thisWindow = value; }
+        }
 
         private ExamClass model;
         public ExamClass Model

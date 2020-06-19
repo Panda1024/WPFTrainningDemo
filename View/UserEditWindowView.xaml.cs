@@ -27,7 +27,7 @@ namespace TranningDemo.View
         {
             InitializeComponent();
             UserEditViewModel view = new UserEditViewModel(ref model);
-            view.thisWindow = this;
+            view.ThisWindow = this;
             this.DataContext = view;
         }
 

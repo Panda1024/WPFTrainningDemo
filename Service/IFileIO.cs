@@ -7,8 +7,10 @@ using TranningDemo.Model;
 
 namespace TranningDemo.Service
 {
-    interface ISaveData
+    public interface IFileIO
     {
+        List<ExamClass> ImportData(string filePath);
+
         void SaveData(string fileName, List<ExamClass> dataList);
     }
 }

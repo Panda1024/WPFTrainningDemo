@@ -45,7 +45,7 @@
 
             <Label Grid.Row="0" Grid.Column="0" Content="Class NO." VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3" />
             <TextBox Grid.Row="0" Grid.Column="1" Style="{StaticResource defaultTextBoxStyle}" Margin="3"
-                    Text="{Binding Model.Id}" />
+                    Text="{Binding Model.ClassNo}" />
             <Label Grid.Row="1" Grid.Column="0" Content="Institute of Students" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3" />
             <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource defaultTextBoxStyle}" Margin="3" 
                      Text="{Binding Model.InstituteStudents}" />

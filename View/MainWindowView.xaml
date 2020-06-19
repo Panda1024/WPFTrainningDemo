@@ -56,7 +56,7 @@
                   SelectionMode="Single" >
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Class No." 
-                                    Binding="{Binding Id}"/>
+                                    Binding="{Binding ClassNo}"/>
                 <DataGridTextColumn Header="Institute of Students" 
                                     Binding="{Binding InstituteStudents}"/>
                 <DataGridTextColumn Header="Number of Students" 

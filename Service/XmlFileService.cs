@@ -9,40 +9,52 @@ using TranningDemo.Model;
 
 namespace TranningDemo.Service
 {
-    class XmlFileService : IImportData, ISaveData
+    class XmlFileService : IFileIO
     {
-        public List<ExamClass> ImportData(string filePath)
+        public List<ExamClass> ImportData(string fullFileName)
         {
-            List<ExamClass>  data = new List<ExamClass>();
-            XElement file = XElement.Load(filePath);
-            IEnumerable<XElement> xElements = from item in file.Elements("ExamClass")
-                                              select item;
-            foreach (XElement item in xElements)
+            if (fullFileName != string.Empty)
             {
-                data.Add(new ExamClass(item.Element("ClassNo.").Value,
-                                        item.Element("InstituteOfStudents").Value,
-                                        int.Parse(item.Element("NumberOfStudents").Value),
-                                        item.Element("InstituteOfProctors").Value,
-                                        int.Parse(item.Element("NumberOfProctors").Value))
-                    );
+                List<ExamClass> dataList = new List<ExamClass>();
+                XElement file = XElement.Load(fullFileName);
+                IEnumerable<XElement> xElements = from item in file.Elements("ExamClass")
+                                                  select item;
+                foreach (XElement item in xElements)
+                {
+                    dataList.Add(new ExamClass(item.Element("ClassNo.").Value,
+                                            item.Element("InstituteOfStudents").Value,
+                                            int.Parse(item.Element("NumberOfStudents").Value),
+                                            item.Element("InstituteOfProctors").Value,
+                                            int.Parse(item.Element("NumberOfProctors").Value))
+                        );
+                }
+                return dataList;
             }
-            return data;
+            else
+            {
+                return null;
+            }
         }
 
         public void SaveData(string fullFileName, List<ExamClass> dataList )
         {
-            XDocument xmlFile = new XDocument();
-            XElement root = new XElement("ExamClassArrangement");
-            foreach (var item in dataList)
+            if (fullFileName != string.Empty)
             {
-                root.Add(new XElement("ClassNo.", item.Id),
-                         new XElement("InstituteOfStudents", item.InstituteStudents),
-                         new XElement("NumberOfStudents", item.NumberStudents),
-                         new XElement("InstituteOfProctors", item.InstituteProctors),
-                         new XElement("NumberOfProctors", item.NumberProctors));
+                XDocument xmlFile = new XDocument();
+                XElement root = new XElement("ExamClassArrangement");
+                foreach (var item in dataList)
+                {
+                    root.Add(new XElement("ClassNo.", item.Id),
+                             new XElement("InstituteOfStudents", item.InstituteStudents),
+                             new XElement("NumberOfStudents", item.NumberStudents),
+                             new XElement("InstituteOfProctors", item.InstituteProctors),
+                             new XElement("NumberOfProctors", item.NumberProctors));
+                }
+                xmlFile.Add(root);
+                xmlFile.Save(fullFileName);
             }
-            xmlFile.Add(root);
-            xmlFile.Save(fullFileName);
+            else
+                return;
         }
     }
 }
