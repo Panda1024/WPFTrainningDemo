@@ -5,6 +5,8 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
+using GalaSoft.MvvmLight.Threading;
 
 namespace TranningDemo
 {
@@ -13,5 +15,10 @@ namespace TranningDemo
     /// </summary>
     public partial class App : Application
     {
+        public App()
+        {
+            DispatcherHelper.Initialize();
+        }
+        
     }
 }

@@ -1,14 +1,16 @@
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.CommandWpf;
-using GalaSoft.MvvmLight.Messaging;
 using System.Collections.ObjectModel;
 using System.Windows.Forms;
 using System.IO;
+using System.Windows.Threading;
 using Ninject;
-using Ninject.Modules;
 using TranningDemo.Model;
 using TranningDemo.View;
 using TranningDemo.Service;
+using System.Threading;
+using System;
+using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.CommandWpf;
+using GalaSoft.MvvmLight.Threading;
 
 namespace TranningDemo.ViewModel
 {
@@ -18,10 +20,11 @@ namespace TranningDemo.ViewModel
         public MainWindowViewModel()
         {
             dataSource = new DataSource();
+            GridModelList = new ObservableCollection<ExamClass>();
             if (IsInDesignMode)                  // Design Pattern
             {
-                
-                dataSource.Add(new ExamClass("N666", "机械学院", 60, "机械学院", 2));
+
+                dataSource.Insert(0, new ExamClass("N666", "机械学院", 60, "机械学院", 2));
                 this.Query();
             }
             else                                // Runtime Pattern
@@ -34,10 +37,12 @@ namespace TranningDemo.ViewModel
                 EditCommand = new RelayCommand<ExamClass>(Edit);
                 DeleteCommand = new RelayCommand<ExamClass>(Delete);
             }
-            
+
         }
 
         #region Field
+
+        private DataSource dataSource;
 
         private string searchKey = string.Empty;
         public string SearchKey
@@ -46,7 +51,6 @@ namespace TranningDemo.ViewModel
             set { searchKey = value; RaisePropertyChanged(); }
         }
 
-        private DataSource dataSource;
         private ObservableCollection<ExamClass> gridModelList;
         public ObservableCollection<ExamClass> GridModelList
         {
@@ -54,12 +58,8 @@ namespace TranningDemo.ViewModel
             set { gridModelList = value; RaisePropertyChanged(); }
         }
 
-        private ExamClass selectedCell;          // DataGrid 当前鼠标选中单元
-        public ExamClass SelectedCell
-        {
-            get { return selectedCell; }
-            set { selectedCell = value; RaisePropertyChanged(); }
-        }
+        private readonly object editLocker = new object();
+        private readonly object deleteLocker = new object();
         #endregion
 
         #region Command
@@ -78,7 +78,7 @@ namespace TranningDemo.ViewModel
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = System.IO.Path.Combine( Application.StartupPath, @"..\..\Data" );
+                openFileDialog.InitialDirectory = System.IO.Path.Combine(Application.StartupPath, @"..\..\Data");
                 openFileDialog.Filter = "xml files (*.xml)|*.xml|json files (*.json)|*.json|All files (*.*)|*.*";
                 openFileDialog.FilterIndex = 3;
                 openFileDialog.RestoreDirectory = true;
@@ -107,10 +107,6 @@ namespace TranningDemo.ViewModel
                         GridModelList.Add(item);
                     }
                 }
-                else
-                {
-                    return;
-                }
             }
         }
 
@@ -123,10 +119,6 @@ namespace TranningDemo.ViewModel
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 dataSource.SaveData(saveFileDialog.FileName);
-            }
-            else
-            {
-                return;
             }
         }
 
@@ -151,51 +143,96 @@ namespace TranningDemo.ViewModel
 
         private void Add()
         {
-            ExamClass newModel = new ExamClass();
-            UserEditWindowView view = new UserEditWindowView(ref newModel);
-            var v = view.ShowDialog();
-            if(v.Value)
+            Thread thread = new Thread(() =>
             {
-                dataSource.Add(newModel);
-                gridModelList.Insert(0, newModel);
-            }
-        }
-        private void Edit(ExamClass selectedCell)
-        {         
-            if (selectedCell != null)
-            {
-                var editModel = selectedCell.DeepClone();
-                UserEditWindowView view = new UserEditWindowView(ref editModel);
+                ExamClass newModel = new ExamClass();
+                UserEditWindowView view = new UserEditWindowView(ref newModel);
                 var v = view.ShowDialog();
                 if (v.Value)
                 {
-                    int index = dataSource.Data.FindIndex(item => item.Id == selectedCell.Id);
-                    dataSource.Delete(selectedCell.Id);
-                    dataSource.Data.Insert(index, editModel);
-                    index = gridModelList.IndexOf(selectedCell);
-                    gridModelList.Remove(selectedCell);
-                    gridModelList.Insert(index, editModel);
+                    /* GridModelList是 CollectionView 类，属于UI进程元素，不支持跨线程操作
+                     * 需要放在Dispather 中进行安全操作
+                     * CheckBeginInvokeOnUI 首先执行检查，检查调用对象是否已经在主线程上，如果在就直接执行后面的委托，如果不是就去执行调度
+                     * Bug记录：尝试过使用Dispatcher.CurrentDispatcher.BeginInvoke，但BeginInvoke内的代码没有执行
+                     */
+                    DispatcherHelper.CheckBeginInvokeOnUI(() =>
+                    {
+                        dataSource.Insert(0, newModel);
+                        GridModelList.Insert(0, newModel);
+                    });
                 }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+
+        }
+
+        private void Edit(ExamClass selectedCell)
+        {
+            if (selectedCell == null)
+                return;
+            Thread thread = new Thread(EditModel);
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start(selectedCell);
+        }
+
+        private void EditModel(object obj)
+        {
+            ExamClass model = (ExamClass)obj;
+            int gridIndex = GridModelList.IndexOf(model);
+            ExamClass editModel = model.DeepClone();
+
+            UserEditWindowView view = new UserEditWindowView(ref editModel);
+            var v = view.ShowDialog();
+            if (v.Value)                // 子窗口点击Save
+            {
+                lock (editLocker)       // 同一时刻仅允许一个线程编辑数据
+                {
+                    DispatcherHelper.CheckBeginInvokeOnUI(() =>
+                    {
+                        int dataIndex = dataSource.GetIndex(editModel.Id);
+                        if (dataIndex == -1)
+                            return;
+                        dataSource.Delete(editModel.Id);
+                        dataSource.Insert(dataIndex, editModel);
+                        GridModelList.RemoveAt(gridIndex);
+                        GridModelList.Insert(gridIndex, editModel);
+                    });
+                }
+
             }
         }
 
         private void Delete(ExamClass selectedCell)
         {
-            var model = dataSource.GetById(selectedCell.Id);
-            if (model != null)
+            if (selectedCell == null)
+                return;
+            Thread thread = new Thread(DeleteModel);
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start(selectedCell);
+        }
+
+        private void DeleteModel(object obj)
+        {
+            ExamClass model = (ExamClass)obj;
+            var v = MessageBox.Show("Are you sure to delete the selected cell?",  // Mention string
+                                    "Delete Selected Cell",                       // Box Title
+                                    MessageBoxButtons.YesNo,                      // Button: Yes, No
+                                    MessageBoxIcon.Question,                      // Icon: ?
+                                    MessageBoxDefaultButton.Button2);             // DefaultButton: No
+
+            if (v == DialogResult.Yes)  // 子窗口点击Yes
             {
-                var v = MessageBox.Show("Are you sure to delete the selected cell?",  // Mention string
-                                        "Delete Selected Cell",                       // Title
-                                        MessageBoxButtons.YesNo,                      // Button: Yes, No
-                                        MessageBoxIcon.Question,                      // Icon: ?
-                                        MessageBoxDefaultButton.Button2);             // DefaultButton: No
-                
-                if (v == DialogResult.Yes)
+                lock (deleteLocker)     // 同一时刻仅允许一个线程删除数据
                 {
-                    dataSource.Delete(model.Id);
-                    gridModelList.Remove(selectedCell);
+                    DispatcherHelper.CheckBeginInvokeOnUI(() =>
+                    {
+                        dataSource.Delete(model.Id);
+                        GridModelList.Remove(model);
+                    });
                 }
-                    
+                
+
             }
         }
         #endregion

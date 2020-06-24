@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using GalaSoft.MvvmLight;
 using System.Windows.Forms;
@@ -52,21 +50,29 @@ namespace TranningDemo.Model
         public ExamClass GetById(uint id)
         {
             var model =  data.Find(item => item.Id == id);
-            if (model != null)
-                return model.DeepClone();
-            return null;
+            if (model == null)
+                return null;
+            return model.DeepClone();
         }
 
-        public void Add(ExamClass examClass)
+        public void Insert(int index, ExamClass examClass)
         {
-            data.Add(examClass);
+            if (index == -1)
+                return;
+            data.Insert(index, examClass);
         }
 
-        public void Delete(uint id)
+        public bool Delete(uint id)
         {
             var element = data.Find(item => item.Id == id);
-            if (element != null)
+            if (element == null)
+                return false;
+            else
+            {
                 data.Remove(element);
+                return true;
+            }
+            
         }
 
         public List<ExamClass> SerachByClassNo(string classNo)
@@ -74,6 +80,11 @@ namespace TranningDemo.Model
             if (data == null || data.Count == 0)
                 return null;
             return data.Where(s => s.ClassNo.Contains(classNo)).ToList();
+        }
+
+        public int GetIndex(uint id)
+        {
+            return data.FindIndex(item => item.Id == id);
         }
         #endregion
     }

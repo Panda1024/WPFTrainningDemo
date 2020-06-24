@@ -11,7 +11,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using GalaSoft.MvvmLight.Messaging;
+using TranningDemo.ViewModel;
 
 namespace TranningDemo.View
 {
@@ -23,7 +25,6 @@ namespace TranningDemo.View
         public MainWindowView()
         {
             InitializeComponent();
-            this.Unloaded += (sender, e) => Messenger.Default.Unregister(this);
         }
     }
 }

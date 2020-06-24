@@ -21,7 +21,7 @@ namespace TranningDemo.ViewModel
 
         #region Field
         private Window thisWindow;
-        public Window ThisWindow
+        internal Window ThisWindow
         {
             set { thisWindow = value; }
         }
@@ -30,7 +30,7 @@ namespace TranningDemo.ViewModel
         public ExamClass Model
         {
             get { return model; }
-            set { model = value; RaisePropertyChanged(); }
+            set { model = value; RaisePropertyChanged(()=> Model); }
         }
 
         #endregion
