@@ -1,0 +1,44 @@
+﻿<Window x:Class="TranningDemo.View.StartWindowView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TranningDemo.View"
+        mc:Ignorable="d"
+        Title="StartWindowView" Height="200" Width="300">
+    
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="..\Theme/Style.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.DataContext>
+        <Binding Path="Start" Source="{StaticResource Locator}"></Binding>
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="15"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!--Top Menu Area-->
+        <Menu Grid.Row="0" Width="Auto" Height="20" Background="LightGray" DockPanel.Dock="Top" >
+            <!--File-->
+            <MenuItem Header="File">
+                <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
+                <MenuItem Header="Save" Command="{Binding SaveFileCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <Button Grid.Row="2"  Grid.Column="1" Width="150" 
+                Content="Start Main window" 
+                Command="{Binding StartMainCommand}"/>
+        
+    </Grid>
+</Window>

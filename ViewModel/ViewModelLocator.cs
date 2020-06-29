@@ -14,14 +14,14 @@ namespace TranningDemo.ViewModel
         {
             ServiceLocator.SetLocatorProvider(() => SimpleIoc.Default);
 
-            SimpleIoc.Default.Register<MainWindowViewModel>();                    // 注册MainWindowViewModel
+            SimpleIoc.Default.Register<StartWindowViewModel>();                    // 注册MainWindowViewModel
         }
 
-        public MainWindowViewModel Main
+        public StartWindowViewModel Start
         {
             get
             {
-                return ServiceLocator.Current.GetInstance<MainWindowViewModel>(); // 通过容器获得实例对象
+                return ServiceLocator.Current.GetInstance<StartWindowViewModel>(); // 通过容器获得实例对象
             }
         }
         

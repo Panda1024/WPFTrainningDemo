@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Xml;
 using System.Xml.Linq;
 using TranningDemo.Model;
 
@@ -21,7 +21,7 @@ namespace TranningDemo.Service
                                                   select item;
                 foreach (XElement item in xElements)
                 {
-                    dataList.Add(new ExamClass(item.Element("ClassNo.").Value,
+                    dataList.Add(new ExamClass(item.Element("ClassNo").Value,
                                             item.Element("InstituteOfStudents").Value,
                                             int.Parse(item.Element("NumberOfStudents").Value),
                                             item.Element("InstituteOfProctors").Value,
@@ -40,18 +40,23 @@ namespace TranningDemo.Service
         {
             if (fullFileName != string.Empty)
             {
-                XDocument xmlFile = new XDocument();
-                XElement root = new XElement("ExamClassArrangement");
+                XmlTextWriter xmlWrite= new XmlTextWriter(fullFileName, null);
+                xmlWrite.Formatting = Formatting.Indented;
+                xmlWrite.WriteStartElement("ExamClassArrangement"); // 添加根元素
+
                 foreach (var item in dataList)
                 {
-                    root.Add(new XElement("ClassNo.", item.Id),
-                             new XElement("InstituteOfStudents", item.InstituteStudents),
-                             new XElement("NumberOfStudents", item.NumberStudents),
-                             new XElement("InstituteOfProctors", item.InstituteProctors),
-                             new XElement("NumberOfProctors", item.NumberProctors));
+                    xmlWrite.WriteStartElement("ExamClass");    // 添加子元素
+                    xmlWrite.WriteElementString("ClassNo", item.ClassNo);
+                    xmlWrite.WriteElementString("InstituteOfStudents", item.InstituteStudents);
+                    xmlWrite.WriteElementString("NumberOfStudents", item.NumberStudents.ToString());
+                    xmlWrite.WriteElementString("InstituteOfProctors", item.InstituteProctors);
+                    xmlWrite.WriteElementString("NumberOfProctors", item.NumberProctors.ToString());
+                    xmlWrite.WriteEndElement();                 // 关闭元素
                 }
-                xmlFile.Add(root);
-                xmlFile.Save(fullFileName);
+                xmlWrite.WriteFullEndElement();                 // 关闭根元素
+                xmlWrite.Close();
+                //File.SetLastAccessTime(fullFileName, DateTime.Now);
             }
             else
                 return;

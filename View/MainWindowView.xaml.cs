@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using GalaSoft.MvvmLight.Messaging;
+using TranningDemo.ViewModel;
 
 namespace TranningDemo.View
 {
@@ -20,10 +21,10 @@ namespace TranningDemo.View
     /// </summary>
     public partial class MainWindowView : Window
     {
-        public MainWindowView()
+        public MainWindowView(string openFileName)
         {
             InitializeComponent();
-            this.Unloaded += (sender, e) => Messenger.Default.Unregister(this);
+            this.DataContext = new MainWindowViewModel(openFileName);
         }
     }
 }

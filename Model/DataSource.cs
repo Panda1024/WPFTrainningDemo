@@ -62,6 +62,14 @@ namespace TranningDemo.Model
             data.Add(examClass);
         }
 
+        public void Insert(int index, ExamClass examClass)
+        {
+            if (index < 0)
+                index = 0;
+            else if (index > data.Count)
+                index = data.Count;
+            data.Insert(index, examClass);
+        }
         public void Delete(uint id)
         {
             var element = data.Find(item => item.Id == id);

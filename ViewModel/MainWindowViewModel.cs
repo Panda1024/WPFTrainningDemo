@@ -1,44 +1,56 @@
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.CommandWpf;
-using GalaSoft.MvvmLight.Messaging;
 using System.Collections.ObjectModel;
+using System;
+using Threading = System.Threading;
 using System.Windows.Forms;
 using System.IO;
 using Ninject;
-using Ninject.Modules;
 using TranningDemo.Model;
 using TranningDemo.View;
-using TranningDemo.Service;
 
 namespace TranningDemo.ViewModel
 {
     public class MainWindowViewModel : ViewModelBase
     {
-
-        public MainWindowViewModel()
+        public MainWindowViewModel(string dataFileName)
         {
-            dataSource = new DataSource();
-            if (IsInDesignMode)                  // Design Pattern
-            {
-                
-                dataSource.Add(new ExamClass("N666", "机械学院", 60, "机械学院", 2));
-                this.Query();
-            }
-            else                                // Runtime Pattern
-            {
-                OpenFileCommand = new RelayCommand(OpenFile);
-                SaveFileCommand = new RelayCommand(SaveFile);
-                SearchCommand = new RelayCommand(Query);
-                ClearCommand = new RelayCommand(ClearSearchBar);
-                AddCommand = new RelayCommand(Add);
-                EditCommand = new RelayCommand<ExamClass>(Edit);
-                DeleteCommand = new RelayCommand<ExamClass>(Delete);
-            }
-            
+            this.dataFileName = dataFileName;
+            IKernel kernel = new StandardKernel(new DataSourceModule(true));
+            dataSource = kernel.Get<DataSource>();
+            dataSource.ImportData(dataFileName);
+            this.Query();
+
+            SearchCommand = new RelayCommand(Query);
+            ClearCommand = new RelayCommand(ClearSearchBar);
+            AddCommand = new RelayCommand(Add);
+            EditCommand = new RelayCommand<ExamClass>(Edit);
+            DeleteCommand = new RelayCommand<ExamClass>(Delete);
+
+            StartListenFileTime();
         }
 
         #region Field
+        /* Scope: 内部
+         * Description: 窗口间共享的数据文件 */
+        private string dataFileName;
 
+        /* Scope: 内部
+         * Description: 数据文件最后修改时间 */
+        private DateTime lastAccessTime;
+
+        private Threading.Timer timer;
+
+        /* Scope: 内部
+         * Description:  */
+        private event Action<string> upLoadToFile;
+
+        /* Scope: 内部
+         * Description: 窗口后台数据*/
+        private DataSource dataSource;
+
+        /* Scope: 窗口绑定
+         * Description: 搜索栏词条*/
         private string searchKey = string.Empty;
         public string SearchKey
         {
@@ -46,7 +58,8 @@ namespace TranningDemo.ViewModel
             set { searchKey = value; RaisePropertyChanged(); }
         }
 
-        private DataSource dataSource;
+        /* Scope: 窗口绑定
+         * Description: DataGrid绑定数据集合*/
         private ObservableCollection<ExamClass> gridModelList;
         public ObservableCollection<ExamClass> GridModelList
         {
@@ -54,17 +67,19 @@ namespace TranningDemo.ViewModel
             set { gridModelList = value; RaisePropertyChanged(); }
         }
 
-        private ExamClass selectedCell;          // DataGrid 当前鼠标选中单元
-        public ExamClass SelectedCell
+        /* Scope: 窗口绑定
+         * Description: 底部状态栏打印信息*/
+        private string printText;
+        public string PrintText
         {
-            get { return selectedCell; }
-            set { selectedCell = value; RaisePropertyChanged(); }
+            get { return printText; }
+            set { printText = value; RaisePropertyChanged(); }
         }
         #endregion
 
+        /* Scope: 窗口绑定
+         * Description: 按钮绑定命令*/
         #region Command
-        public RelayCommand OpenFileCommand { get; set; }
-        public RelayCommand SaveFileCommand { get; set; }
         public RelayCommand SearchCommand { get; set; }
         public RelayCommand ClearCommand { get; set; }
         public RelayCommand AddCommand { get; set; }
@@ -74,62 +89,9 @@ namespace TranningDemo.ViewModel
         #endregion
 
         #region Method
-        private void OpenFile()
-        {
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
-            {
-                openFileDialog.InitialDirectory = System.IO.Path.Combine( Application.StartupPath, @"..\..\Data" );
-                openFileDialog.Filter = "xml files (*.xml)|*.xml|json files (*.json)|*.json|All files (*.*)|*.*";
-                openFileDialog.FilterIndex = 3;
-                openFileDialog.RestoreDirectory = true;
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    string fileExtension = Path.GetExtension(openFileDialog.FileName);
-                    IKernel kernel;
-                    bool useXml;
-                    switch (fileExtension)
-                    {
-                        case ".xml":
-                            useXml = true;
-                            kernel = new StandardKernel(new DataSourceModule(useXml));
-                            dataSource = kernel.Get<DataSource>();
-                            break;
-                        case ".json":
-                            useXml = false;
-                            kernel = new StandardKernel(new DataSourceModule(useXml));
-                            dataSource = kernel.Get<DataSource>();
-                            break;
-                    }
-                    dataSource.ImportData(openFileDialog.FileName);
-                    GridModelList = new ObservableCollection<ExamClass>();
-                    foreach (ExamClass item in dataSource.Data)
-                    {
-                        GridModelList.Add(item);
-                    }
-                }
-                else
-                {
-                    return;
-                }
-            }
-        }
 
-        private void SaveFile()
-        {
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.InitialDirectory = Application.StartupPath;
-            saveFileDialog.Filter = "xml files (*.xml)|*.xml|json files (*.json)|*.json|All files (*.*)|*.*";
-            saveFileDialog.RestoreDirectory = true;
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                dataSource.SaveData(saveFileDialog.FileName);
-            }
-            else
-            {
-                return;
-            }
-        }
-
+        /* Scope: 命令绑定
+         * Description: 根据词条查询元素，将查找到的元素覆盖到DataGrid中 */
         private void Query()
         {
             var models = dataSource.SerachByClassNo(SearchKey);
@@ -143,12 +105,16 @@ namespace TranningDemo.ViewModel
             }
         }
 
+        /* Scope: 绑定命令
+         * Description: 清除搜索栏，并刷新DataGird */
         private void ClearSearchBar()
         {
             SearchKey = string.Empty;
             this.Query();
         }
 
+        /* Scope: 绑定命令
+         * Description: 打开子窗口，编辑新元素并添加到后台和前台数据中 */
         private void Add()
         {
             ExamClass newModel = new ExamClass();
@@ -156,10 +122,14 @@ namespace TranningDemo.ViewModel
             var v = view.ShowDialog();
             if(v.Value)
             {
-                dataSource.Add(newModel);
+                dataSource.Insert(0, newModel);
                 gridModelList.Insert(0, newModel);
+                upLoadToFile(dataFileName);
             }
         }
+
+        /* Scope: 绑定命令
+         * Description: 根据选中行元素的ID，打开子窗口，编辑后台和前台数据中对应元素 */
         private void Edit(ExamClass selectedCell)
         {         
             if (selectedCell != null)
@@ -175,17 +145,20 @@ namespace TranningDemo.ViewModel
                     index = gridModelList.IndexOf(selectedCell);
                     gridModelList.Remove(selectedCell);
                     gridModelList.Insert(index, editModel);
+                    upLoadToFile(dataFileName);
                 }
             }
         }
 
+        /* Scope: 绑定命令
+         * Description: 根据选中行元素的ID，删除后台和前台数据中对应元素 */
         private void Delete(ExamClass selectedCell)
         {
             var model = dataSource.GetById(selectedCell.Id);
             if (model != null)
             {
                 var v = MessageBox.Show("Are you sure to delete the selected cell?",  // Mention string
-                                        "Delete Selected Cell",                       // Title
+                                        "Delete",                                     // Title
                                         MessageBoxButtons.YesNo,                      // Button: Yes, No
                                         MessageBoxIcon.Question,                      // Icon: ?
                                         MessageBoxDefaultButton.Button2);             // DefaultButton: No
@@ -194,9 +167,39 @@ namespace TranningDemo.ViewModel
                 {
                     dataSource.Delete(model.Id);
                     gridModelList.Remove(selectedCell);
+                    upLoadToFile(dataFileName);
                 }
                     
             }
+        }
+
+        /* Scope: 内部
+         * Description: 启动定时器，周期0.5s。当最后修改时间发生变化时，更新后台数据 */
+        private void StartListenFileTime()
+        {
+            lastAccessTime = File.GetLastAccessTime(dataFileName);
+            upLoadToFile += (dataFileName) => dataSource.SaveData(dataFileName);
+            /* 回调函数：ListenFileTimer，参数传递：无，立即启动，周期500ms */
+            timer = new Threading.Timer(new Threading.TimerCallback(ListenFileTime), timer, 0, 500);
+        }
+
+        /* Scope: 内部
+         * Description: 监听数据文件的修改时间，周期0.5s。当最后修改时间发生变化时，更新后台数据 */
+        private void ListenFileTime(object obj)
+        {
+            DateTime fileAccessTime = File.GetLastAccessTime(dataFileName);
+            PrintText = String.Format("Last Access Time: {0}, Current Access Time: {1}", lastAccessTime.ToString(), fileAccessTime.ToString());
+            if (DateTime.Compare(fileAccessTime, lastAccessTime) > 0)
+            {
+                dataSource.ImportData(dataFileName);
+                this.Query();
+                lastAccessTime = fileAccessTime;
+            }
+        }
+
+        ~MainWindowViewModel()
+        {
+            timer.Dispose();        // 回收定时器
         }
         #endregion
 

@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\obj\Debug\
+C:\Users\DELL\source\repos\WPFTrainningDemo-master\obj\Debug\
 TranningDemo
 none
 false
 DEBUG;TRACE
-C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\App.xaml
-4-1086885521
+C:\Users\DELL\source\repos\WPFTrainningDemo-master\App.xaml
+41370318000
 2908835469
-16595835101
-1271687084404
-MainWindow.xaml;Theme\Style.xaml;View\MainWindowView.xaml;View\UserEditWindowView.xaml;
+17890098444
+136-1927833073
+Theme\Style.xaml;View\MainWindowView.xaml;View\StartWindowView.xaml;View\UserEditWindowView.xaml;
 
-False
+True
 

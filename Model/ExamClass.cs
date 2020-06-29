@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,6 +14,11 @@ namespace TranningDemo.Model
         public ExamClass()
         {
             id = DataSource.index++;
+            this.classNo = string.Empty;
+            this.instituteStudents = string.Empty;
+            this.numberStudents = 0;
+            this.instituteProctors = string.Empty;
+            this.numberProctors = 0;
         }
 
         public ExamClass(string classNo, string instituteStudents, int numberStudents, string instituteProctors, int numberProctors)
