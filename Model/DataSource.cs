@@ -17,6 +17,7 @@ namespace TranningDemo.Model
         public DataSource()
         {
             data = new List<ExamClass>();
+            fileService = new XmlFileService();
         }
 
         public DataSource(IFileIO fileService)
@@ -30,11 +31,11 @@ namespace TranningDemo.Model
         #region Field
         private List<ExamClass> data;
 
-        public List<ExamClass> Data { get => data; }
+        public List<ExamClass> Data { get => data; set => data = value; }
 
         readonly IFileIO fileService;                     // File read and write interface
 
-        internal static uint index = 0;
+        internal static int index = 0;
         #endregion
 
         #region Method
@@ -49,7 +50,7 @@ namespace TranningDemo.Model
             this.fileService.SaveData(fullFileName, data);
         }
 
-        public ExamClass GetById(uint id)
+        public ExamClass GetById(int id)
         {
             var model =  data.Find(item => item.Id == id);
             if (model != null)
@@ -70,7 +71,7 @@ namespace TranningDemo.Model
                 index = data.Count;
             data.Insert(index, examClass);
         }
-        public void Delete(uint id)
+        public void Delete(int id)
         {
             var element = data.Find(item => item.Id == id);
             if (element != null)
@@ -88,18 +89,23 @@ namespace TranningDemo.Model
 
     public class DataSourceModule : NinjectModule
     {
-        private readonly bool useXml;
-        public DataSourceModule(bool useXml)
+        private readonly string mode;
+        public DataSourceModule(string mode)
         {
-            this.useXml = useXml;
+            this.mode = mode;
         }
 
         public override void Load()
         {
-            if (this.useXml)
-                Bind<IFileIO>().To<XmlFileService>();
-            else
-                Bind<IFileIO>().To<JsonFileService>();
+            switch (mode) {
+                case "xml":
+                    Bind<IFileIO>().To<XmlFileService>();
+                    break;
+                case "json":
+                    Bind<IFileIO>().To<JsonFileService>();
+                    break;
+            }
+                
         }
     }
 }

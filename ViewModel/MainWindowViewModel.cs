@@ -8,6 +8,7 @@ using System.IO;
 using Ninject;
 using TranningDemo.Model;
 using TranningDemo.View;
+using System.Linq;
 
 namespace TranningDemo.ViewModel
 {
@@ -15,11 +16,8 @@ namespace TranningDemo.ViewModel
     {
         public MainWindowViewModel(string dataFileName)
         {
-            this.dataFileName = dataFileName;
-            IKernel kernel = new StandardKernel(new DataSourceModule(true));
-            dataSource = kernel.Get<DataSource>();
-            dataSource.ImportData(dataFileName);
-            this.Query();
+            dataSource = new NpgsqlModel("trainningdemo");
+            RefreshGrid();
 
             SearchCommand = new RelayCommand(Query);
             ClearCommand = new RelayCommand(ClearSearchBar);
@@ -27,27 +25,18 @@ namespace TranningDemo.ViewModel
             EditCommand = new RelayCommand<ExamClass>(Edit);
             DeleteCommand = new RelayCommand<ExamClass>(Delete);
 
-            StartListenFileTime();
+            StartListenSQL();
         }
 
         #region Field
-        /* Scope: 内部
-         * Description: 窗口间共享的数据文件 */
-        private string dataFileName;
 
         /* Scope: 内部
-         * Description: 数据文件最后修改时间 */
-        private DateTime lastAccessTime;
-
+         * Description: 监听数据库的定时器 */
         private Threading.Timer timer;
 
         /* Scope: 内部
-         * Description:  */
-        private event Action<string> upLoadToFile;
-
-        /* Scope: 内部
-         * Description: 窗口后台数据*/
-        private DataSource dataSource;
+         * Description: 窗口后台数据模型 */
+        private NpgsqlModel dataSource;
 
         /* Scope: 窗口绑定
          * Description: 搜索栏词条*/
@@ -59,7 +48,7 @@ namespace TranningDemo.ViewModel
         }
 
         /* Scope: 窗口绑定
-         * Description: DataGrid绑定数据集合*/
+         * Description: DataGrid绑定列表*/
         private ObservableCollection<ExamClass> gridModelList;
         public ObservableCollection<ExamClass> GridModelList
         {
@@ -94,23 +83,37 @@ namespace TranningDemo.ViewModel
          * Description: 根据词条查询元素，将查找到的元素覆盖到DataGrid中 */
         private void Query()
         {
-            var models = dataSource.SerachByClassNo(SearchKey);
+            var searchResult = dataSource.Search(SearchKey);
             GridModelList = new ObservableCollection<ExamClass>();
-            if (models != null)
+            if (searchResult != null)
             {
-                models.ForEach(arg =>
+                searchResult.ForEach(arg =>
                 {
                     GridModelList.Add(arg);
                 });
             }
         }
 
-        /* Scope: 绑定命令
+        /* Scope: 绑定命令 + 内部
          * Description: 清除搜索栏，并刷新DataGird */
         private void ClearSearchBar()
         {
             SearchKey = string.Empty;
-            this.Query();
+            RefreshGrid();
+        }
+
+        private void RefreshGrid()
+        {
+            var data = dataSource.localData;
+            if(SearchKey == string.Empty)       // 搜索栏有关键词的时候，不更新 DataGrid
+            {
+                GridModelList = new ObservableCollection<ExamClass>();
+                data.ForEach(arg =>
+                {
+                    GridModelList.Add(arg);
+                });
+            }
+            
         }
 
         /* Scope: 绑定命令
@@ -120,32 +123,33 @@ namespace TranningDemo.ViewModel
             ExamClass newModel = new ExamClass();
             UserEditWindowView view = new UserEditWindowView(ref newModel);
             var v = view.ShowDialog();
-            if(v.Value)
+            if (v.Value)
             {
-                dataSource.Insert(0, newModel);
-                gridModelList.Insert(0, newModel);
-                upLoadToFile(dataFileName);
+                dataSource.Add(newModel);
+                GridModelList.Insert(0, newModel);
             }
         }
 
         /* Scope: 绑定命令
          * Description: 根据选中行元素的ID，打开子窗口，编辑后台和前台数据中对应元素 */
         private void Edit(ExamClass selectedCell)
-        {         
+        {
             if (selectedCell != null)
             {
+                int id = selectedCell.Id;
                 var editModel = selectedCell.DeepClone();
                 UserEditWindowView view = new UserEditWindowView(ref editModel);
                 var v = view.ShowDialog();
                 if (v.Value)
                 {
-                    int index = dataSource.Data.FindIndex(item => item.Id == selectedCell.Id);
-                    dataSource.Delete(selectedCell.Id);
-                    dataSource.Data.Insert(index, editModel);
-                    index = gridModelList.IndexOf(selectedCell);
-                    gridModelList.Remove(selectedCell);
-                    gridModelList.Insert(index, editModel);
-                    upLoadToFile(dataFileName);
+                    dataSource.Edit(id, editModel);
+
+                    int index = GridModelList.IndexOf(selectedCell);    // 查找索引值
+                    if(index>=0 && index<GridModelList.Count)
+                    {
+                        GridModelList.RemoveAt(index);                 // 删除元素
+                        GridModelList.Insert(index, editModel);        // 在原位置插入新元素
+                    }
                 }
             }
         }
@@ -154,47 +158,44 @@ namespace TranningDemo.ViewModel
          * Description: 根据选中行元素的ID，删除后台和前台数据中对应元素 */
         private void Delete(ExamClass selectedCell)
         {
-            var model = dataSource.GetById(selectedCell.Id);
-            if (model != null)
+            if (selectedCell != null)
             {
                 var v = MessageBox.Show("Are you sure to delete the selected cell?",  // Mention string
                                         "Delete",                                     // Title
                                         MessageBoxButtons.YesNo,                      // Button: Yes, No
                                         MessageBoxIcon.Question,                      // Icon: ?
                                         MessageBoxDefaultButton.Button2);             // DefaultButton: No
-                
+
                 if (v == DialogResult.Yes)
                 {
-                    dataSource.Delete(model.Id);
-                    gridModelList.Remove(selectedCell);
-                    upLoadToFile(dataFileName);
+                    dataSource.DeleteByID(selectedCell.Id);
+                    GridModelList.Remove(selectedCell);
                 }
-                    
+
             }
         }
 
         /* Scope: 内部
-         * Description: 启动定时器，周期0.5s。当最后修改时间发生变化时，更新后台数据 */
-        private void StartListenFileTime()
+         * Description: 启动定时器，周期1.0s。当最后修改时间发生变化时，更新后台数据 */
+        private void StartListenSQL()
         {
-            lastAccessTime = File.GetLastAccessTime(dataFileName);
-            upLoadToFile += (dataFileName) => dataSource.SaveData(dataFileName);
             /* 回调函数：ListenFileTimer，参数传递：无，立即启动，周期500ms */
-            timer = new Threading.Timer(new Threading.TimerCallback(ListenFileTime), timer, 0, 500);
+            timer = new Threading.Timer(new Threading.TimerCallback(ListenSQL), null, 0, 1000);
         }
 
         /* Scope: 内部
-         * Description: 监听数据文件的修改时间，周期0.5s。当最后修改时间发生变化时，更新后台数据 */
-        private void ListenFileTime(object obj)
+         * Description: 从数据库下载数据并更新到 DataGrid，周期1.0s */
+        private void ListenSQL(object obj)
         {
-            DateTime fileAccessTime = File.GetLastAccessTime(dataFileName);
-            PrintText = String.Format("Last Access Time: {0}, Current Access Time: {1}", lastAccessTime.ToString(), fileAccessTime.ToString());
-            if (DateTime.Compare(fileAccessTime, lastAccessTime) > 0)
+            if (!dataSource.CompareWithSQL())
             {
-                dataSource.ImportData(dataFileName);
-                this.Query();
-                lastAccessTime = fileAccessTime;
+                //dataSource.UploadToSQL();
+                RefreshGrid();
+                PrintText = "更新云端数据到本地";
             }
+            else
+                PrintText = "本地数据与云端相同";
+
         }
 
         ~MainWindowViewModel()

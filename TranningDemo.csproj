@@ -115,6 +115,7 @@
     </ApplicationDefinition>
     <Compile Include="Model\DataSource.cs" />
     <Compile Include="Model\ExamClass.cs" />
+    <Compile Include="Model\NpgsqlModel.cs" />
     <Compile Include="Service\IFileIO.cs" />
     <Compile Include="Service\JsonFileService.cs" />
     <Compile Include="Service\XmlFileService.cs" />

@@ -32,6 +32,7 @@
             <!--File-->
             <MenuItem Header="File">
                 <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
+                <MenuItem Header="Import xml file to SQL" Command="{Binding ImportDataCommand}" />
                 <MenuItem Header="Save" Command="{Binding SaveFileCommand}" />
             </MenuItem>
         </Menu>

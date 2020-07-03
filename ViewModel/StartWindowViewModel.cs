@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TranningDemo.Model;
 using TranningDemo.View;
 
 namespace TranningDemo.ViewModel
@@ -15,6 +16,7 @@ namespace TranningDemo.ViewModel
         public StartWindowViewModel()
         {
             OpenFileCommand = new RelayCommand(OpenFile);
+            ImportDataCommand = new RelayCommand(ImportXmlToSql);
             SaveFileCommand = new RelayCommand(SaveFile);
             StartMainCommand = new RelayCommand(StartMainView);
             pool = new Semaphore(2, 2);
@@ -30,6 +32,7 @@ namespace TranningDemo.ViewModel
         #region Command
         public RelayCommand OpenFileCommand { get; set; }
         public RelayCommand SaveFileCommand { get; set; }
+        public RelayCommand ImportDataCommand { get; set; }
         public RelayCommand StartMainCommand { get; set; }
         #endregion
 
@@ -69,6 +72,14 @@ namespace TranningDemo.ViewModel
             {
                 return;
             }
+        }
+
+        private void ImportXmlToSql()
+        {
+            OpenFile();
+            NpgsqlModel npgsqlModel = new NpgsqlModel("trainningdemo");
+            npgsqlModel.ImportFromXmlFileToSQL(dataFileName);
+
         }
 
         /* Scope: 内部
