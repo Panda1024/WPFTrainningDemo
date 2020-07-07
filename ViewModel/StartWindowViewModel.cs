@@ -19,6 +19,11 @@ namespace TranningDemo.ViewModel
             ImportDataCommand = new RelayCommand(ImportXmlToSql);
             SaveFileCommand = new RelayCommand(SaveFile);
             StartMainCommand = new RelayCommand(StartMainView);
+            SetMode11Command = new RelayCommand(SetMode11);
+            SetMode12Command = new RelayCommand(SetModel2);
+            SetMode13Command = new RelayCommand(SetMode13);
+
+            dataSourceMode = "POSTGRESQL";
             pool = new Semaphore(2, 2);
         }
 
@@ -27,6 +32,8 @@ namespace TranningDemo.ViewModel
         private static Semaphore pool;
 
         private string dataFileName;
+
+        private string dataSourceMode;
         #endregion
 
         #region Command
@@ -34,6 +41,9 @@ namespace TranningDemo.ViewModel
         public RelayCommand SaveFileCommand { get; set; }
         public RelayCommand ImportDataCommand { get; set; }
         public RelayCommand StartMainCommand { get; set; }
+        public RelayCommand SetMode11Command { get; set; }
+        public RelayCommand SetMode12Command { get; set; }
+        public RelayCommand SetMode13Command { get; set; }
         #endregion
 
         #region Method
@@ -91,13 +101,28 @@ namespace TranningDemo.ViewModel
                 pool.WaitOne();
                 if (dataFileName == null)
                     dataFileName = @"..\..\Data\ExamClassArrangement.xml";     // 默认文件地址
-                MainWindowView view =  new MainWindowView(dataFileName);
+                MainWindowView view =  new MainWindowView(dataSourceMode, dataFileName);
                 view.ShowDialog();
                 pool.Release();
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
             
+        }
+
+        private void SetMode11()
+        {
+            dataSourceMode = "XML";
+        }
+
+        private void SetModel2()
+        {
+            dataSourceMode = "JSON";
+        }
+        private void SetMode13()
+        {
+            dataSourceMode = "POSTGRESQL";
+
         }
         #endregion
     }

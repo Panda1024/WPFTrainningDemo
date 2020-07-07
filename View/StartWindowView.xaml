@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TranningDemo.View"
         mc:Ignorable="d"
-        Title="StartWindowView" Height="200" Width="300">
+        Title="StartWindowView" Height="300" Width="400">
     
     <Window.Resources>
         <ResourceDictionary>
@@ -34,6 +34,15 @@
                 <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
                 <MenuItem Header="Import xml file to SQL" Command="{Binding ImportDataCommand}" />
                 <MenuItem Header="Save" Command="{Binding SaveFileCommand}" />
+            </MenuItem>
+            <MenuItem Header="Setting">
+                <MenuItem Header="xml File" Command="{Binding SetMode11Command}" />
+                <MenuItem Header="json File" Command="{Binding SetMode12Command}" />
+                <MenuItem Header="PostgreSQL" Command="{Binding SetMode13Command}" />
+            </MenuItem>
+            <MenuItem Header="About">
+            </MenuItem>
+            <MenuItem Header="Help">
             </MenuItem>
         </Menu>
 

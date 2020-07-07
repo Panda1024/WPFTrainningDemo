@@ -13,7 +13,7 @@ namespace TranningDemo.Model
     {
         public ExamClass()
         {
-            this.id = NpgsqlModel.index++;
+            this.id = DataSource.index++;
             this.classNo = string.Empty;
             this.instituteStudents = string.Empty;
             this.numberStudents = 0;
@@ -23,7 +23,7 @@ namespace TranningDemo.Model
 
         public ExamClass(string classNo, string instituteStudents, int numberStudents, string instituteProctors, int numberProctors)
         {
-            this.id = NpgsqlModel.index++;
+            this.id = DataSource.index++;
             this.classNo = classNo;
             this.instituteStudents = instituteStudents;
             this.numberStudents = numberStudents;

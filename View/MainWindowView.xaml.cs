@@ -21,10 +21,10 @@ namespace TranningDemo.View
     /// </summary>
     public partial class MainWindowView : Window
     {
-        public MainWindowView(string openFileName)
+        public MainWindowView(string dataSourceMode, string openFileName)
         {
             InitializeComponent();
-            this.DataContext = new MainWindowViewModel(openFileName);
+            this.DataContext = new MainWindowViewModel(dataSourceMode, openFileName);
         }
     }
 }

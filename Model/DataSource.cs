@@ -1,90 +1,116 @@
-﻿using System;
+﻿using Ninject.Modules;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
+using System.Security.RightsManagement;
 using System.Text;
 using System.Threading.Tasks;
-using GalaSoft.MvvmLight;
-using System.Windows.Forms;
-using Ninject;
-using Ninject.Modules;
 using TranningDemo.Service;
 
 namespace TranningDemo.Model
 {
-    public class DataSource: ObservableObject
+    class DataSource
     {
-        public DataSource()
+        public DataSource(IDataService dataService)
         {
-            data = new List<ExamClass>();
-            fileService = new XmlFileService();
+            localData = new List<ExamClass>();
+            if (dataService == null)
+                throw new ArgumentNullException("fileService");
+            this.dataService = dataService;
         }
 
-        public DataSource(IFileIO fileService)
-        {
-            data = new List<ExamClass>();
-            if (fileService == null)
-                throw new ArgumentNullException("fileService");
-            this.fileService = fileService;
-        }
 
         #region Field
-        private List<ExamClass> data;
 
-        public List<ExamClass> Data { get => data; set => data = value; }
+        private List<ExamClass> localdata;
 
-        readonly IFileIO fileService;                     // File read and write interface
+        public List<ExamClass> localData
+        {
+            get
+            {
+                return localdata;
+            }
+            set
+            {
+                if (value != null)
+                    localdata = value;
+            }
+        }
+
+        readonly IDataService dataService;                     // File read and write interface
 
         internal static int index = 0;
-        #endregion
 
-        #region Method
+        #endregion
 
         public void ImportData(string fullFileName)
         {
-            data = this.fileService.ImportData(fullFileName);
+            localData = this.dataService.ImportData(fullFileName);
         }
 
         public void SaveData(string fullFileName)
         {
-            this.fileService.SaveData(fullFileName, data);
+            this.dataService.SaveData(fullFileName, localData);
         }
 
-        public ExamClass GetById(int id)
+        public List<ExamClass> Search(string searchKey)
         {
-            var model =  data.Find(item => item.Id == id);
-            if (model != null)
-                return model.DeepClone();
-            return null;
+            return dataService.Query(localData, searchKey);
+
         }
 
-        public void Add(ExamClass examClass)
+        public void Add(ExamClass model)
         {
-            data.Add(examClass);
+            try
+            {
+                /* 操作本地数据 */
+                localData.Insert(0, model);
+            }
+            catch
+            {
+                Console.WriteLine("Error of adding data");
+                return;
+            }
         }
 
-        public void Insert(int index, ExamClass examClass)
+        public void Edit(int id, ExamClass model)
         {
-            if (index < 0)
-                index = 0;
-            else if (index > data.Count)
-                index = data.Count;
-            data.Insert(index, examClass);
-        }
-        public void Delete(int id)
-        {
-            var element = data.Find(item => item.Id == id);
-            if (element != null)
-                data.Remove(element);
+            try
+            {
+                /* 操作本地数据 */
+                int index = localData.FindIndex(item => item.Id == id);
+                localData.RemoveAt(index);
+                localData.Insert(index, model);
+            }
+            catch
+            {
+                Console.WriteLine("Error of editing data");
+                return;
+            }
         }
 
-        public List<ExamClass> SerachByClassNo(string classNo)
+        public void DeleteByID(int id)
         {
-            if (data == null || data.Count == 0)
-                return null;
-            return data.Where(s => s.ClassNo.Contains(classNo)).ToList();
+            try
+            {
+                /* 操作本地数据 */
+                int index = localData.FindIndex(item => item.Id == id);
+                if (index >= 0 && index < localData.Count)
+                {
+                    localData.RemoveAt(index);
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Error of deleting the element 'Id = {0}' ");
+                return ;
+            }
         }
-        #endregion
+
+        public List<ExamClass> CompareWith(string fullFileName)
+        {
+            return this.dataService.CompareWith(localData, fullFileName);
+        }
     }
 
     public class DataSourceModule : NinjectModule
@@ -97,15 +123,19 @@ namespace TranningDemo.Model
 
         public override void Load()
         {
-            switch (mode) {
-                case "xml":
-                    Bind<IFileIO>().To<XmlFileService>();
+            switch (mode)
+            {
+                case "XML":
+                    Bind<IDataService>().To<XmlFileService>();
                     break;
-                case "json":
-                    Bind<IFileIO>().To<JsonFileService>();
+                case "JSON":
+                    Bind<IDataService>().To<JsonFileService>();
+                    break;
+                case "POSTGRESQL":
+                    Bind<IDataService>().To<SQLService>();
                     break;
             }
-                
+
         }
     }
 }

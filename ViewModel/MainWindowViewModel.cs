@@ -14,9 +14,15 @@ namespace TranningDemo.ViewModel
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        public MainWindowViewModel(string dataFileName)
+        public MainWindowViewModel(string dataSourceMode, string dataFileName)
         {
-            dataSource = new NpgsqlModel("trainningdemo");
+            this.dataSourceMode = dataSourceMode;
+            this.dataFileName = dataFileName;
+
+            IKernel kernel = new StandardKernel(new DataSourceModule(dataSourceMode));
+            dataSource = kernel.Get<DataSource>();
+
+            dataSource.ImportData(dataFileName);
             RefreshGrid();
 
             SearchCommand = new RelayCommand(Query);
@@ -25,7 +31,7 @@ namespace TranningDemo.ViewModel
             EditCommand = new RelayCommand<ExamClass>(Edit);
             DeleteCommand = new RelayCommand<ExamClass>(Delete);
 
-            StartListenSQL();
+            StartListen();
         }
 
         #region Field
@@ -35,8 +41,16 @@ namespace TranningDemo.ViewModel
         private Threading.Timer timer;
 
         /* Scope: 内部
+         * Description: 窗口对应的数据源模式 */
+        private readonly string dataSourceMode;
+
+        /* Scope: 内部
+         * Description: 窗口对应的数据文件名/数据库名 */
+        private readonly string dataFileName;
+
+        /* Scope: 内部
          * Description: 窗口后台数据模型 */
-        private NpgsqlModel dataSource;
+        private DataSource dataSource;
 
         /* Scope: 窗口绑定
          * Description: 搜索栏词条*/
@@ -127,6 +141,7 @@ namespace TranningDemo.ViewModel
             {
                 dataSource.Add(newModel);
                 GridModelList.Insert(0, newModel);
+                dataSource.SaveData(dataFileName);
             }
         }
 
@@ -143,13 +158,14 @@ namespace TranningDemo.ViewModel
                 if (v.Value)
                 {
                     dataSource.Edit(id, editModel);
-
+                    dataSource.SaveData(dataFileName);
                     int index = GridModelList.IndexOf(selectedCell);    // 查找索引值
                     if(index>=0 && index<GridModelList.Count)
                     {
                         GridModelList.RemoveAt(index);                 // 删除元素
                         GridModelList.Insert(index, editModel);        // 在原位置插入新元素
                     }
+                    
                 }
             }
         }
@@ -170,6 +186,7 @@ namespace TranningDemo.ViewModel
                 {
                     dataSource.DeleteByID(selectedCell.Id);
                     GridModelList.Remove(selectedCell);
+                    dataSource.SaveData(dataFileName);
                 }
 
             }
@@ -177,19 +194,20 @@ namespace TranningDemo.ViewModel
 
         /* Scope: 内部
          * Description: 启动定时器，周期1.0s。当最后修改时间发生变化时，更新后台数据 */
-        private void StartListenSQL()
+        private void StartListen()
         {
             /* 回调函数：ListenFileTimer，参数传递：无，立即启动，周期500ms */
-            timer = new Threading.Timer(new Threading.TimerCallback(ListenSQL), null, 0, 1000);
+            timer = new Threading.Timer(new Threading.TimerCallback(Listen), null, 0, 1000);
         }
 
         /* Scope: 内部
          * Description: 从数据库下载数据并更新到 DataGrid，周期1.0s */
-        private void ListenSQL(object obj)
+        private void Listen(object obj)
         {
-            if (!dataSource.CompareWithSQL())
+            var sqlData = dataSource.CompareWith(dataFileName);
+            if (sqlData != null)
             {
-                //dataSource.UploadToSQL();
+                dataSource.localData = sqlData;
                 RefreshGrid();
                 PrintText = "更新云端数据到本地";
             }
