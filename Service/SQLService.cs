@@ -164,7 +164,6 @@ namespace TranningDemo.Service
         private List<ExamClass> ConvertTolist(DataSet dataSet)
         {
             List<ExamClass> modelList = new List<ExamClass>();
-            DataTable dataTable = dataSet.Tables[0];
             foreach (DataRow row in dataSet.Tables[0].Rows)
             {
                 string Id = row.ItemArray[0].ToString();

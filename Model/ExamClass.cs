@@ -1,11 +1,4 @@
-﻿using GalaSoft.MvvmLight;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System;
 
 namespace TranningDemo.Model
 {
@@ -89,11 +82,11 @@ namespace TranningDemo.Model
         public override bool Equals(object obj)
         {
             if (obj == null) return false;
-            ExamClass examClass = obj as ExamClass;   // 逆变转换
-            if (examClass == null)
+            // 逆变转换
+            if (obj as ExamClass == null)
                 return false;
             else
-                return Equals(examClass);
+                return Equals(obj as ExamClass);
         }
         // 重写哈希码比较函数
         public override int GetHashCode()

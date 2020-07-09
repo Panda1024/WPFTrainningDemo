@@ -1,14 +1,11 @@
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.CommandWpf;
 using System.Collections.ObjectModel;
-using System;
 using Threading = System.Threading;
 using System.Windows.Forms;
-using System.IO;
 using Ninject;
 using TranningDemo.Model;
 using TranningDemo.View;
-using System.Linq;
 
 namespace TranningDemo.ViewModel
 {
@@ -16,9 +13,7 @@ namespace TranningDemo.ViewModel
     {
         public MainWindowViewModel(string dataSourceMode, string dataFileName)
         {
-            this.dataSourceMode = dataSourceMode;
             this.dataFileName = dataFileName;
-
             IKernel kernel = new StandardKernel(new DataSourceModule(dataSourceMode));
             dataSource = kernel.Get<DataSource>();
 
@@ -41,16 +36,12 @@ namespace TranningDemo.ViewModel
         private Threading.Timer timer;
 
         /* Scope: 内部
-         * Description: 窗口对应的数据源模式 */
-        private readonly string dataSourceMode;
-
-        /* Scope: 内部
          * Description: 窗口对应的数据文件名/数据库名 */
         private readonly string dataFileName;
 
         /* Scope: 内部
          * Description: 窗口后台数据模型 */
-        private DataSource dataSource;
+        private readonly DataSource dataSource;
 
         /* Scope: 窗口绑定
          * Description: 搜索栏词条*/
@@ -105,6 +96,7 @@ namespace TranningDemo.ViewModel
                 {
                     GridModelList.Add(arg);
                 });
+                PrintText = string.Format("{0} Rows of Serach Results", GridModelList.Count);
             }
         }
 
@@ -118,7 +110,7 @@ namespace TranningDemo.ViewModel
 
         private void RefreshGrid()
         {
-            var data = dataSource.localData;
+            var data = dataSource.LocalData;
             if(SearchKey == string.Empty)       // 搜索栏有关键词的时候，不更新 DataGrid
             {
                 GridModelList = new ObservableCollection<ExamClass>();
@@ -193,26 +185,25 @@ namespace TranningDemo.ViewModel
         }
 
         /* Scope: 内部
-         * Description: 启动定时器，周期1.0s。当最后修改时间发生变化时，更新后台数据 */
+         * Description: 启动定时器，周期0.5s。当最后修改时间发生变化时，更新后台数据 */
         private void StartListen()
         {
             /* 回调函数：ListenFileTimer，参数传递：无，立即启动，周期500ms */
-            timer = new Threading.Timer(new Threading.TimerCallback(Listen), null, 0, 1000);
+            timer = new Threading.Timer(new Threading.TimerCallback(Listen), null, 0, 500);
         }
 
         /* Scope: 内部
-         * Description: 从数据库下载数据并更新到 DataGrid，周期1.0s */
+         * Description: 从数据库下载数据并更新到 DataGrid，周期0.5s */
         private void Listen(object obj)
         {
             var sqlData = dataSource.CompareWith(dataFileName);
             if (sqlData != null)
             {
-                dataSource.localData = sqlData;
+                dataSource.LocalData = sqlData;
                 RefreshGrid();
-                PrintText = "更新云端数据到本地";
             }
-            else
-                PrintText = "本地数据与云端相同";
+            if(SearchKey == string.Empty)
+                PrintText = string.Format("{0} Rows of Records", dataSource.LocalData.Count);
 
         }
 

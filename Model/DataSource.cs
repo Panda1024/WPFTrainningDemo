@@ -1,30 +1,31 @@
 ﻿using Ninject.Modules;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.RightsManagement;
-using System.Text;
-using System.Threading.Tasks;
 using TranningDemo.Service;
 
 namespace TranningDemo.Model
 {
-    class DataSource
+    public class DataSource
     {
         public DataSource(IDataService dataService)
         {
-            localData = new List<ExamClass>();
-            if (dataService == null)
-                throw new ArgumentNullException("fileService");
-            this.dataService = dataService;
+            LocalData = new List<ExamClass>();
+            this.dataService = dataService ?? throw new ArgumentNullException("IDataService");
         }
 
+        public DataSource()
+        {
+            LocalData = new List<ExamClass>();
+            this.dataService = new XmlFileService();
+        }
 
         #region Field
 
+        internal static int index = 0;
+
         private List<ExamClass> localdata;
 
-        public List<ExamClass> localData
+        public List<ExamClass> LocalData
         {
             get
             {
@@ -39,23 +40,21 @@ namespace TranningDemo.Model
 
         readonly IDataService dataService;                     // File read and write interface
 
-        internal static int index = 0;
-
         #endregion
 
         public void ImportData(string fullFileName)
         {
-            localData = this.dataService.ImportData(fullFileName);
+            LocalData = this.dataService.ImportData(fullFileName);
         }
 
         public void SaveData(string fullFileName)
         {
-            this.dataService.SaveData(fullFileName, localData);
+            this.dataService.SaveData(fullFileName, LocalData);
         }
 
         public List<ExamClass> Search(string searchKey)
         {
-            return dataService.Query(localData, searchKey);
+            return dataService.Query(LocalData, searchKey);
 
         }
 
@@ -64,7 +63,7 @@ namespace TranningDemo.Model
             try
             {
                 /* 操作本地数据 */
-                localData.Insert(0, model);
+                LocalData.Insert(0, model);
             }
             catch
             {
@@ -78,9 +77,9 @@ namespace TranningDemo.Model
             try
             {
                 /* 操作本地数据 */
-                int index = localData.FindIndex(item => item.Id == id);
-                localData.RemoveAt(index);
-                localData.Insert(index, model);
+                int ind = LocalData.FindIndex(item => item.Id == id);
+                LocalData.RemoveAt(ind);
+                LocalData.Insert(ind, model);
             }
             catch
             {
@@ -94,10 +93,10 @@ namespace TranningDemo.Model
             try
             {
                 /* 操作本地数据 */
-                int index = localData.FindIndex(item => item.Id == id);
-                if (index >= 0 && index < localData.Count)
+                int ind = LocalData.FindIndex(item => item.Id == id);
+                if (ind >= 0 && ind < LocalData.Count)
                 {
-                    localData.RemoveAt(index);
+                    LocalData.RemoveAt(ind);
                 }
             }
             catch
@@ -109,7 +108,7 @@ namespace TranningDemo.Model
 
         public List<ExamClass> CompareWith(string fullFileName)
         {
-            return this.dataService.CompareWith(localData, fullFileName);
+            return this.dataService.CompareWith(LocalData, fullFileName);
         }
     }
 
@@ -135,7 +134,6 @@ namespace TranningDemo.Model
                     Bind<IDataService>().To<SQLService>();
                     break;
             }
-
         }
     }
 }

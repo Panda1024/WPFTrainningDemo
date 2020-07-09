@@ -107,7 +107,6 @@ namespace TranningDemo.ViewModel
             });
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
-            
         }
 
         private void SetMode11()

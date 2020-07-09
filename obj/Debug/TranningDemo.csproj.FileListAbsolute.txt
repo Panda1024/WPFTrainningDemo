@@ -225,3 +225,6 @@ C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\bin\Debug\System.Threa
 C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\bin\Debug\System.ValueTuple.xml
 C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\obj\Debug\View\StartWindowView.g.cs
 C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\obj\Debug\View\StartWindowView.baml
+C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\bin\Debug\nunit.framework.dll
+C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\bin\Debug\nunit.framework.pdb
+C:\Users\DELL\source\repos\TrainningDemo\WPFTrainningDemo\bin\Debug\nunit.framework.xml

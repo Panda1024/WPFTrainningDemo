@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TranningDemo.View"
         mc:Ignorable="d"
-        Title="MainWindowView" Height="450" Width="800">
+        Title="Examination room information management system_Fang,Li " Height="450" Width="800">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -24,7 +24,7 @@
 
         <!--Search Area-->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,0">
-            <Label Content="Searcha Bar" Height="Auto" Width="Auto" Margin="10 5 5 5" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <Label Content="Search Bar" Height="Auto" Width="Auto" Margin="10 5 5 5" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Style="{StaticResource defaultTextBoxStyle}" 
                     Text="{Binding SearchKey}" />
             <Button Content="Search" Style="{StaticResource defaultButtonStyle}" Margin="10"

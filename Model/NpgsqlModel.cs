@@ -1,16 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Remoting.Messaging;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Documents;
-using System.Windows.Navigation;
 using Npgsql;
-using NpgsqlTypes;
 using TranningDemo.Service;
 
 namespace TranningDemo.Model
@@ -33,7 +24,7 @@ namespace TranningDemo.Model
 
         private List<ExamClass> localdata;
 
-        public List<ExamClass> localData
+        public List<ExamClass> LocalData
         {
             get
             {
@@ -64,7 +55,7 @@ namespace TranningDemo.Model
             CreateDataBase();
             CreateTable(tableName);
 
-            this.localData = DownLoadFromSQL();
+            this.LocalData = DownLoadFromSQL();
         }
 
         /// <summary>
@@ -205,7 +196,7 @@ namespace TranningDemo.Model
             try
             {
                 /* 操作本地数据 */
-                localData.Insert(0, model);
+                LocalData.Insert(0, model);
                 return UploadToSQL();
                 ///* 数据库同步操作 */
                 //using (var connect = new NpgsqlConnection(connectSql))
@@ -241,11 +232,11 @@ namespace TranningDemo.Model
             try
             {
                 /* 操作本地数据 */
-                int index = localData.FindIndex(item => item.Id == id);
-                if(index>=0 && index<localData.Count)
+                int ind = LocalData.FindIndex(item => item.Id == id);
+                if(ind >= 0 && ind < LocalData.Count)
                 {
-                    localData.RemoveAt(index);
-                    localData.Insert(index, model);
+                    LocalData.RemoveAt(ind);
+                    LocalData.Insert(index, model);
                 }
 
                 return UploadToSQL();
@@ -282,10 +273,10 @@ namespace TranningDemo.Model
             try
             {
                 /* 操作本地数据 */
-                int index = localData.FindIndex(item => item.Id == id);
-                if (index >= 0 && index < localData.Count)
+                int ind = LocalData.FindIndex(item => item.Id == id);
+                if (ind >= 0 && ind < LocalData.Count)
                 {
-                    localData.RemoveAt(index);
+                    LocalData.RemoveAt(ind);
                 }
 
                 return UploadToSQL();
@@ -326,7 +317,7 @@ namespace TranningDemo.Model
         {
             try
             {
-                if (localData.Count == 0 || localData == null)
+                if (LocalData.Count == 0 || LocalData == null)
                     return -1;
                 using (var connect = new NpgsqlConnection(connectSql))
                 {
@@ -346,7 +337,7 @@ namespace TranningDemo.Model
                     dataTable.Columns.Add("NumberProctors", Type.GetType("System.Int32"));
 
                     // 将 localData 添加到 dataTable 中
-                    foreach (var model in localData)
+                    foreach (var model in LocalData)
                     {
                         DataRow row = dataTable.NewRow();
                         row["Id"] = model.Id;
@@ -394,20 +385,20 @@ namespace TranningDemo.Model
         {
             List<ExamClass> sqlData = DownLoadFromSQL();
             //sqlData = sqlData.OrderBy(it => it.Id).ToList();
-            if (localData.Count != sqlData.Count && sqlData != null)
+            if (LocalData.Count != sqlData.Count && sqlData == null)
             {
-                localData = sqlData;
+                LocalData = sqlData;
                 return false;
             }
-            for(int i=0; i<localData.Count; i++)
+            for(int i=0; i<LocalData.Count; i++)
             {
                 //Console.WriteLine("{0} compare:{1} vs {2}", i, localData[i].ToString(), sqlData[i].ToString());
                 //Console.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}", localData[i].Id, localData[i].ClassNo, localData[i].InstituteStudents, localData[i].NumberStudents, localData[i].InstituteProctors, localData[i].NumberProctors);
                 //Console.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}", sqlData[i].Id, sqlData[i].ClassNo, sqlData[i].InstituteStudents, sqlData[i].NumberStudents, sqlData[i].InstituteProctors, sqlData[i].NumberProctors);
-                var equal = localData[i].Equals(sqlData[i]);
+                var equal = LocalData[i].Equals(sqlData[i]);
                 if (!equal)
                 {
-                    localData = sqlData;
+                    LocalData = sqlData;
                     return false;
                 }
             }
@@ -447,7 +438,6 @@ namespace TranningDemo.Model
         public List<ExamClass> ConvertTolist(DataSet dataSet)
         {
             List<ExamClass> modelList = new List<ExamClass>();
-            DataTable dataTable = dataSet.Tables[0];
             foreach (DataRow row in dataSet.Tables[0].Rows)
             {
                 string Id                   = row.ItemArray[0].ToString();
